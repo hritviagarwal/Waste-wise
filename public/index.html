@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WasteWise</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14231c; --muted:#5a6b62; --paper:#eef3ef; --card:#fff; --line:#cfdad3; --brand:#1f4d3a;
+  --sell:#c98e0a; --donate:#2f6fb5; --compost:#4e8f3a; --biogas:#7a4fa3;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:40px 20px 80px}
+h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;line-height:1.1;margin:0}
+h1{font-size:clamp(2.4rem,7vw,3.8rem);font-weight:800;color:var(--brand);letter-spacing:-.02em}
+.lead{color:var(--muted);max-width:52ch;margin:12px 0 32px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+label,.q{display:block;font-weight:500;margin:18px 0 8px}
+label:first-child{margin-top:0}
+input[type=text],input[type=date]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:inherit}
+input:focus,button:focus-visible{outline:3px solid #8fc4a8;outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font:inherit;cursor:pointer;color:inherit}
+.chip[aria-pressed=true]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.hint{color:var(--muted);font-size:.9rem}
+.go{margin-top:24px;width:100%;background:var(--brand);color:#fff;border:0;border-radius:10px;padding:15px;font:700 1.05rem "Bricolage Grotesque",sans-serif;cursor:pointer}
+.go:disabled{opacity:.6;cursor:wait}
+.err{color:#a3261d;margin-top:12px}
+.hidden{display:none}
+
+/* The route: four destinations, the chosen one is lit */
+.route{list-style:none;margin:28px 0 0;padding:0 0 0 26px;position:relative}
+.route:before{content:"";position:absolute;left:9px;top:10px;bottom:10px;width:3px;background:var(--line);border-radius:2px}
+.stop{position:relative;padding:10px 0 10px 14px;color:var(--muted)}
+.stop:before{content:"";position:absolute;left:-24px;top:17px;width:15px;height:15px;border-radius:50%;background:#fff;border:3px solid var(--line)}
+.stop strong{font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem}
+.stop.alt{color:var(--ink)}
+.stop.alt:before{border-color:var(--c)}
+.stop.main{background:var(--c);color:#fff;border-radius:12px;padding:16px 18px 16px 18px;margin:6px 0 6px -4px}
+.stop.main:before{left:-20px;top:22px;background:#fff;border-color:var(--c);box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 30%,transparent)}
+.stop.main strong{font-size:1.5rem;display:block}
+.stop.main p{margin:6px 0 0}
+.note{border-left:4px solid var(--sell);background:#fff8e6;padding:12px 14px;border-radius:0 8px 8px 0;margin-top:24px}
+.steps{padding-left:20px;margin:8px 0 0}
+.again{margin-top:22px;background:none;border:1px solid var(--brand);color:var(--brand);border-radius:8px;padding:10px 18px;font:inherit;cursor:pointer}
+footer{margin-top:40px;color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion:no-preference){.stop.main{animation:land .5s ease-out}@keyframes land{from{transform:translateX(-12px);opacity:0}}}
+</style><style>
+.tabs{display:flex;gap:8px;margin:0 0 20px;align-items:center;flex-wrap:wrap}.tabs .sp{flex:1}
+.tab{background:none;border:1px solid var(--line);border-radius:99px;padding:8px 18px;font:inherit;cursor:pointer;color:inherit}.tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.roles{display:grid;gap:8px}.role{text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px 14px;font:inherit;cursor:pointer;color:inherit}.role[aria-pressed=true]{border:2px solid var(--brand);background:#e6f1ea}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px;background:#fff}.card h3{font-size:1.15rem}
+.price{font:800 1.4rem "Bricolage Grotesque",sans-serif;color:var(--brand)}.price s{font-weight:500;font-size:1rem;color:var(--muted);margin-left:6px}
+.badge{font-size:.78rem;background:#fff8e6;border:1px solid var(--sell);border-radius:99px;padding:1px 8px;margin-left:6px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+.small{width:auto;margin-top:12px;padding:10px 20px}.ok{background:#e6f1ea;border-radius:10px;padding:14px;margin-top:16px}
+.sprout{display:flex;gap:10px;align-items:center;margin-bottom:12px}.sprout b{font:800 1.3rem "Bricolage Grotesque",sans-serif;color:var(--brand)}
+</style>
+</head><body><main>
+<h1>WasteWise</h1>
+<p class="lead">Turn leftovers into value. Sproutsy, our AI, decides where each item should go.</p>
+
+<section id="auth" class="panel hidden">
+ <div class="tabs"><button class="tab on" id="tLogin">Log in</button><button class="tab" id="tSign">Create account</button></div>
+ <div id="signOnly" class="hidden">
+  <label>I am a...</label>
+  <div class="roles" id="roles">
+   <button type="button" class="role" data-r="restaurant" aria-pressed="false"><b>Restaurant owner</b><br><span class="hint">Sell or donate surplus food</span></button>
+   <button type="button" class="role" data-r="homekitchen" aria-pressed="false"><b>Home kitchen</b><br><span class="hint">Sell or donate food cooked at home</span></button>
+   <button type="button" class="role" data-r="business" aria-pressed="false"><b>Other small business owner</b><br><span class="hint">Shops, caterers, offices, bakeries</span></button>
+  </div>
+  <label for="name">Your name</label><input type="text" id="name">
+  <label for="city">City</label><input type="text" id="city" placeholder="e.g. Panvel">
+  <div id="bizFields">
+   <label for="biz">Kitchen or business name</label><input type="text" id="biz">
+   <label for="addr">Address</label><input type="text" id="addr">
+   <label for="phone">Phone</label><input type="text" id="phone">
+  </div>
+ </div>
+ <label for="email">Email</label><input type="text" id="email" autocomplete="email">
+ <label for="pw">Password (6+ characters)</label><input type="password" id="pw" style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font:inherit">
+ <button class="go" id="authGo">Log in</button><div class="err hidden" id="authErr" role="alert"></div>
+</section>
+
+<div id="app" class="hidden">
+ <div class="tabs"><button class="tab on" id="nS">Sproutsy</button><button class="tab" id="nM">Buy food</button><span class="sp"></span><span class="hint" id="who"></span><button class="tab" id="out">Log out</button></div>
+
+ <section id="vS">
+  <section id="form" class="panel">
+   <div class="sprout"><span style="font-size:2rem">🌱</span><b>Ask Sproutsy</b></div>
+   <label>What do you have?</label>
+   <div class="chips" id="foodChips"><button type="button" class="chip" aria-pressed="false">Vegetable peels</button><button type="button" class="chip" aria-pressed="false">Cooked meal</button><button type="button" class="chip" aria-pressed="false">Dairy</button><button type="button" class="chip" aria-pressed="false">Paper</button><button type="button" class="chip" aria-pressed="false">Plastic</button></div>
+   <input type="text" id="food" placeholder="Or type it: rice, fish curry, cardboard boxes..." maxlength="300">
+   <label>When was it prepared? <span class="hint">(food only)</span></label>
+   <div class="chips" id="whenChips"><button type="button" class="chip" aria-pressed="false">Today</button><button type="button" class="chip" aria-pressed="false">Yesterday</button></div>
+   <input type="text" id="prepared" placeholder="Or type it: 3 days ago..." maxlength="100">
+   <div class="row"><div><label for="quantity">How much? <span class="hint">(optional)</span></label><input type="text" id="quantity" maxlength="60" placeholder="2 kg, 10 plates"></div>
+   <div><label for="storage">Stored how? <span class="hint">(optional)</span></label><input type="text" id="storage" maxlength="100" placeholder="fridge, counter"></div></div>
+   <button class="go" id="submit">Ask Sproutsy</button><div class="err hidden" id="err" role="alert"></div>
+  </section>
+  <section id="followup" class="panel hidden"><h2>Sproutsy needs a bit more</h2><div id="qs"></div><button class="go" id="submit2">Get my route</button></section>
+  <section id="result" class="panel hidden" aria-live="polite"></section>
+ </section>
+
+ <section id="vM" class="hidden">
+  <div class="panel" id="listBox"><h2>List food for sale</h2>
+   <label for="lItem">Item</label><input type="text" id="lItem" maxlength="100">
+   <div class="row"><div><label for="lPrice">Sale price (₹)</label><input type="text" id="lPrice"></div><div><label for="lOrig">Original price (₹)</label><input type="text" id="lOrig"></div></div>
+   <div class="row"><div><label for="lQty">Portions</label><input type="text" id="lQty"></div><div><label for="lBy">Pick up by</label><input type="text" id="lBy" placeholder="today 9pm"></div></div>
+   <button class="go small" id="lGo">List it</button><div class="err hidden" id="lErr"></div></div>
+  <div id="listings"></div>
+ </section>
+</div>
+<footer>WasteWise gives guidance, not a food safety certificate. When in doubt, don't serve it.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id),esc=s=>{const d=document.createElement("div");d.textContent=s??"";return d.innerHTML};
+let token=localStorage.getItem("ww"),user=null,role=null,questions=[],mode="login",last="";
+const L={restaurant:"Restaurant owner",homekitchen:"Home kitchen",business:"Small business"};
+async function api(p,body,method){const r=await fetch(p,{method:method||(body?"POST":"GET"),headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:body?JSON.stringify(body):undefined});const d=await r.json();if(r.status===401&&token&&!p.includes("login")){logout();}if(!r.ok)throw new Error(d.error||"Something went wrong.");return d}
+const show=(ids,all)=>all.forEach(s=>$(s).classList.toggle("hidden",!ids.includes(s)));
+function logout(){localStorage.removeItem("ww");token=null;user=null;show(["auth"],["auth","app"])}
+function enter(d){token=d.token||token;if(d.token)localStorage.setItem("ww",d.token);user=d.user;$("who").textContent=user.name+" · "+L[user.role];
+ show(["app"],["auth","app"]);$("listBox").classList.remove("hidden");tab("S")}
+function tab(t){show(["v"+t],["vS","vM"]);$("nS").classList.toggle("on",t==="S");$("nM").classList.toggle("on",t==="M");if(t==="M")market()}
+$("nS").onclick=()=>tab("S");$("nM").onclick=()=>tab("M");$("out").onclick=logout;
+
+// auth
+function setMode(m){mode=m;$("tLogin").classList.toggle("on",m==="login");$("tSign").classList.toggle("on",m==="sign");$("signOnly").classList.toggle("hidden",m==="login");$("authGo").textContent=m==="login"?"Log in":"Create account"}
+$("tLogin").onclick=()=>setMode("login");$("tSign").onclick=()=>setMode("sign");
+$("roles").onclick=e=>{const b=e.target.closest(".role");if(!b)return;role=b.dataset.r;[...$("roles").children].forEach(x=>x.setAttribute("aria-pressed",x===b));};
+$("authGo").onclick=async()=>{const err=$("authErr");err.classList.add("hidden");
+ try{const b={email:$("email").value,password:$("pw").value};
+  if(mode==="sign"){if(!role)throw new Error("Choose what you are first.");Object.assign(b,{role,name:$("name").value,city:$("city").value,businessName:$("biz").value,address:$("addr").value,phone:$("phone").value})}
+  enter(await api(mode==="sign"?"/api/signup":"/api/login",b))}catch(e){err.textContent=e.message;err.classList.remove("hidden")}};
+
+// chips
+function chips(g,i){$(g).onclick=e=>{const b=e.target.closest(".chip");if(!b)return;[...$(g).children].forEach(x=>x.setAttribute("aria-pressed",x===b));$(i).value=b.textContent};$(i).oninput=()=>[...$(g).children].forEach(x=>x.setAttribute("aria-pressed","false"))}
+chips("foodChips","food");chips("whenChips","prepared");
+
+async function run(btn,answers){const err=$("err");err.classList.add("hidden");btn.disabled=true;const t=btn.textContent;btn.textContent="Sproutsy is thinking...";
+ try{const d=await api("/api/route",{food:$("food").value.trim(),prepared:$("prepared").value.trim(),quantity:$("quantity").value.trim(),storage:$("storage").value.trim(),answers});
+  last=$("food").value.trim();
+  if(d.status==="needs_info"){questions=d.questions;$("qs").innerHTML=questions.map((q,i)=>`<label class="q" for="a${i}">${esc(q)}</label><input type="text" id="a${i}" maxlength="150">`).join("");show(["followup"],["form","followup","result"])}
+  else render(d)}catch(e){err.textContent=e.message;err.classList.remove("hidden");show(["form"],["form","followup","result"])}
+ finally{btn.disabled=false;btn.textContent=t}}
+$("submit").onclick=()=>$("food").value.trim()?run($("submit")):($("err").textContent="Tell Sproutsy what you have.",$("err").classList.remove("hidden"));
+$("submit2").onclick=()=>run($("submit2"),questions.map((q,i)=>({question:q,answer:$("a"+i).value.trim()})));
+
+const P={sell:["Sell at a reduced price","var(--sell)"],donate:["Donate to a nearby NGO","var(--donate)"],compost:["Make compost","var(--compost)"],biogas:["Send to a biogas plant","var(--biogas)"],scrap:["Scrap dealer / waste paper collector","var(--donate)"]};
+const ip=(id,l,v="",ph="")=>`<div><label for="${id}">${l}</label><input type="text" id="${id}" value="${esc(v)}" placeholder="${ph}"></div>`;
+function view(p,d){
+ if(p==="donate")return `<h3 style="margin-top:22px">Nearby places to donate</h3>`+(d.partners||[]).map(x=>`<div class="card"><h3>${esc(x.name)}${x.sample?'<span class="badge">sample listing</span>':""}</h3><div>${esc(x.address)}</div><div>📞 ${esc(x.phone)} · ${esc(x.hours)}</div></div>`).join("");
+ if(p==="sell")return `<h3 style="margin-top:22px">List it for sale</h3>${ip("sI","Item",last)}<div class="row">${ip("sP","Sale price (₹)")}${ip("sO","Original price (₹)")}</div><div class="row">${ip("sQ","Portions","1")}${ip("sB","Pick up by","","today 9pm")}</div><button class="go small" id="sGo">List for sale</button><div class="err hidden" id="sE"></div>`;
+ const t=new Date(Date.now()+864e5).toISOString().slice(0,10);
+ return `<h3 style="margin-top:22px">Choose a pickup time</h3><div class="row"><div><label for="pd">Date</label><input type="date" id="pd" min="${new Date().toISOString().slice(0,10)}" value="${t}"></div><div><label for="pw2">Time window</label><select id="pw2"><option>8am - 12pm</option><option>12pm - 4pm</option><option>4pm - 8pm</option></select></div></div><label for="pa">Pickup address</label><input type="text" id="pa" value="${esc(user.address||"")}" placeholder="Where should we collect?"><button class="go small" id="pk">Book pickup</button><div class="err hidden" id="pe"></div>`}
+function pick(p,d){
+ document.querySelectorAll("#opts .chip").forEach(x=>x.setAttribute("aria-pressed",x.dataset.p===p));
+ $("act").innerHTML=view(p,d);
+ if($("sGo"))$("sGo").onclick=async()=>{const e=$("sE");try{await api("/api/listings",{item:$("sI").value,price:+$("sP").value,originalPrice:+$("sO").value,quantity:+$("sQ").value,pickupBy:$("sB").value});
+  $("act").innerHTML=`<div class="ok"><b>Listed!</b> Buyers can now see it in Buy food.<br><button class="again" id="seeM">View marketplace</button></div>`;$("seeM").onclick=()=>tab("M")}catch(x){e.textContent=x.message;e.classList.remove("hidden")}};
+ if($("pk"))$("pk").onclick=async()=>{try{const b={pathway:d.pathway,summary:last,date:$("pd").value,window:$("pw2").value,address:$("pa").value};await api("/api/pickups",b);
+  $("act").innerHTML=`<div class="ok"><b>Pickup booked.</b> We'll collect on ${esc(b.date)}, ${esc(b.window)}, from ${esc(b.address)}.${d.pathway==="scrap"?" It goes to a local scrap dealer or waste paper collector.":""}</div>`}catch(x){$("pe").textContent=x.message;$("pe").classList.remove("hidden")}}}
+function render(d){const o=d.options||[d.pathway],[n,c]=P[d.pathway]||P.donate,two=o.length>1;
+ $("result").innerHTML=`<h2>${esc(d.category)}</h2><div class="card" style="border:0;background:${c};color:#fff;margin-top:14px"><div class="hint" style="color:#fff;opacity:.85">Sproutsy recommends</div><h3 style="font-size:1.5rem">${two?"This food can be shared":n}</h3><p style="margin:6px 0 0">${esc(d.reason)}</p></div><div class="note"><b>Safety:</b> ${esc(d.safety_note)}</div><ul class="steps">${(d.next_steps||[]).map(s=>`<li>${esc(s)}</li>`).join("")}</ul>${two?`<label>Choose what to do</label><div class="chips" id="opts">${o.map(p=>`<button type="button" class="chip" data-p="${p}" aria-pressed="false">${P[p][0]}</button>`).join("")}</div>`:'<div id="opts"></div>'}<div id="act"></div><button class="again" id="again">Ask about something else</button>`;
+ show(["result"],["form","followup","result"]);
+ $("again").onclick=()=>{["food","prepared","quantity","storage"].forEach(i=>$(i).value="");document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed","false"));show(["form"],["form","followup","result"])};
+ if(two)$("opts").onclick=e=>{const b=e.target.closest(".chip");if(b)pick(b.dataset.p,d)};else pick(d.pathway,d);}
+
+// marketplace
+async function market(){let ls;try{ls=await api("/api/listings")}catch(e){$("listings").innerHTML=`<div class="panel err">${esc(e.message)}</div>`;return}$("listings").innerHTML=ls.length?ls.map(l=>`<div class="card"><h3>${esc(l.item)}</h3><div class="price">₹${l.price}<s>₹${l.originalPrice}</s></div><div>${l.quantity} portions left · pick up by ${esc(l.pickupBy)}</div><div class="hint">${esc(l.seller.name)}, ${esc(l.seller.address)} · 📞 ${esc(l.seller.phone)}</div><div class="row" style="grid-template-columns:90px auto;align-items:end"><div><label for="q${l.id}">Portions</label><input type="text" id="q${l.id}" value="1"></div><div><button class="go small" data-id="${l.id}" style="margin-top:0">Reserve</button></div></div><div class="note hidden" id="n${l.id}"></div></div>`).join(""):'<div class="panel"><p>No food is listed yet. Restaurants, home kitchens and businesses can list surplus food here.</p></div>'}
+$("listings").onclick=async e=>{const id=e.target.dataset.id;if(!id)return;const n=$("n"+id);n.classList.remove("hidden");
+ try{const r=await api(`/api/listings/${id}/reserve`,{qty:+$("q"+id).value});n.innerHTML=`<b>Reserved. Pay ₹${r.total} at pickup.</b> ${esc(r.seller.name)}, ${esc(r.seller.address)}, 📞 ${esc(r.seller.phone)}. Pick up by ${esc(r.pickupBy)}.`;setTimeout(market,4000)}catch(x){n.textContent=x.message}};
+$("lGo").onclick=async()=>{const e=$("lErr");try{await api("/api/listings",{item:$("lItem").value,price:+$("lPrice").value,originalPrice:+$("lOrig").value,quantity:+$("lQty").value,pickupBy:$("lBy").value});["lItem","lPrice","lOrig","lQty","lBy"].forEach(i=>$(i).value="");e.classList.add("hidden");market()}catch(x){e.textContent=x.message;e.classList.remove("hidden")}};
+
+(async()=>{if(token)try{enter(await api("/api/me"))}catch{logout()}else logout()})();
+</script></body></html>

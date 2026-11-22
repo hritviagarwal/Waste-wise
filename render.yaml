@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: wastewise
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: MODEL
+        value: claude-sonnet-5-5

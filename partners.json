@@ -1,0 +1,5 @@
+[
+ {"type":"ngo","sample":true,"name":"Sample Food Bank (replace)","city":"Panvel","address":"Add real address, Panvel","phone":"00000 00000","hours":"10am-6pm"},
+ {"type":"ngo","sample":true,"name":"Sample Community Kitchen (replace)","city":"Navi Mumbai","address":"Add real address, Navi Mumbai","phone":"00000 00000","hours":"9am-5pm"},
+ {"type":"scrap","sample":true,"name":"Sample Scrap Dealer (replace)","city":"Panvel","address":"Add real address, Panvel","phone":"00000 00000","hours":"9am-7pm"}
+]
