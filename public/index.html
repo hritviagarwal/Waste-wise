@@ -82,7 +82,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem}
 </section>
 
 <div id="app" class="hidden">
- <div class="tabs"><button class="tab on" id="nS">Sproutsy</button><button class="tab" id="nM">Buy food</button><span class="sp"></span><span class="hint" id="who"></span><button class="tab" id="out">Log out</button></div>
+ <div class="tabs"><button class="tab on" id="nS">Sproutsy</button><button class="tab" id="nM">Buy food</button><button class="tab" id="nH">History</button><span class="sp"></span><span class="hint" id="who"></span><button class="tab" id="out">Log out</button></div>
 
  <section id="vS">
   <section id="form" class="panel">
@@ -102,12 +102,11 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem}
  </section>
 
  <section id="vM" class="hidden">
-  <div class="panel" id="listBox"><h2>List food for sale</h2>
-   <label for="lItem">Item</label><input type="text" id="lItem" maxlength="100">
-   <div class="row"><div><label for="lPrice">Sale price (₹)</label><input type="text" id="lPrice"></div><div><label for="lOrig">Original price (₹)</label><input type="text" id="lOrig"></div></div>
-   <div class="row"><div><label for="lQty">Portions</label><input type="text" id="lQty"></div><div><label for="lBy">Pick up by</label><input type="text" id="lBy" placeholder="today 9pm"></div></div>
-   <button class="go small" id="lGo">List it</button><div class="err hidden" id="lErr"></div></div>
-  <div id="listings"></div>
+    <div id="listings"></div>
+ </section>
+ <section id="vH" class="hidden">
+  <div class="chips"><button type="button" class="chip" id="hB" aria-pressed="true">My purchases</button><button type="button" class="chip" id="hS" aria-pressed="false">My sales</button></div>
+  <div id="hist"></div>
  </section>
 </div>
 <footer>WasteWise gives guidance, not a food safety certificate. When in doubt, don't serve it.</footer>
@@ -120,9 +119,9 @@ async function api(p,body,method){const r=await fetch(p,{method:method||(body?"P
 const show=(ids,all)=>all.forEach(s=>$(s).classList.toggle("hidden",!ids.includes(s)));
 function logout(){localStorage.removeItem("ww");token=null;user=null;show(["auth"],["auth","app"])}
 function enter(d){token=d.token||token;if(d.token)localStorage.setItem("ww",d.token);user=d.user;$("who").textContent=user.name+" · "+L[user.role];
- show(["app"],["auth","app"]);$("listBox").classList.remove("hidden");tab("S")}
-function tab(t){show(["v"+t],["vS","vM"]);$("nS").classList.toggle("on",t==="S");$("nM").classList.toggle("on",t==="M");if(t==="M")market()}
-$("nS").onclick=()=>tab("S");$("nM").onclick=()=>tab("M");$("out").onclick=logout;
+ show(["app"],["auth","app"]);tab("S")}
+function tab(t){show(["v"+t],["vS","vM","vH"]);["S","M","H"].forEach(x=>$("n"+x).classList.toggle("on",t===x));if(t==="M")market();if(t==="H")history("B")}
+$("nS").onclick=()=>tab("S");$("nM").onclick=()=>tab("M");$("nH").onclick=()=>tab("H");$("out").onclick=logout;
 
 // auth
 function setMode(m){mode=m;$("tLogin").classList.toggle("on",m==="login");$("tSign").classList.toggle("on",m==="sign");$("signOnly").classList.toggle("hidden",m==="login");$("authGo").textContent=m==="login"?"Log in":"Create account"}
@@ -167,10 +166,18 @@ function render(d){const o=d.options||[d.pathway],[n,c]=P[d.pathway]||P.donate,t
  if(two)$("opts").onclick=e=>{const b=e.target.closest(".chip");if(b)pick(b.dataset.p,d)};else pick(d.pathway,d);}
 
 // marketplace
-async function market(){let ls;try{ls=await api("/api/listings")}catch(e){$("listings").innerHTML=`<div class="panel err">${esc(e.message)}</div>`;return}$("listings").innerHTML=ls.length?ls.map(l=>`<div class="card"><h3>${esc(l.item)}</h3><div class="price">₹${l.price}<s>₹${l.originalPrice}</s></div><div>${l.quantity} portions left · pick up by ${esc(l.pickupBy)}</div><div class="hint">${esc(l.seller.name)}, ${esc(l.seller.address)} · 📞 ${esc(l.seller.phone)}</div><div class="row" style="grid-template-columns:90px auto;align-items:end"><div><label for="q${l.id}">Portions</label><input type="text" id="q${l.id}" value="1"></div><div><button class="go small" data-id="${l.id}" style="margin-top:0">Reserve</button></div></div><div class="note hidden" id="n${l.id}"></div></div>`).join(""):'<div class="panel"><p>No food is listed yet. Restaurants, home kitchens and businesses can list surplus food here.</p></div>'}
+async function market(){let ls;try{ls=await api("/api/listings")}catch(e){$("listings").innerHTML=`<div class="panel err">${esc(e.message)}</div>`;return}$("listings").innerHTML=ls.length?ls.map(l=>`<div class="card"><h3>${esc(l.item)}</h3><div class="price">₹${l.price}<s>₹${l.originalPrice}</s></div><div>${l.quantity} portions left · pick up by ${esc(l.pickupBy)}</div><div class="hint">${esc(l.seller.name)}, ${esc(l.seller.address)} · 📞 ${esc(l.seller.phone)}</div><div class="row" style="grid-template-columns:90px auto;align-items:end"><div><label for="q${l.id}">Portions</label><input type="text" id="q${l.id}" value="1"></div><div><button class="go small" data-id="${l.id}" style="margin-top:0">Reserve</button></div></div><div class="note hidden" id="n${l.id}"></div></div>`).join(""):'<div class="panel"><p>No food is listed for sale right now. Check back soon.</p></div>'}
 $("listings").onclick=async e=>{const id=e.target.dataset.id;if(!id)return;const n=$("n"+id);n.classList.remove("hidden");
  try{const r=await api(`/api/listings/${id}/reserve`,{qty:+$("q"+id).value});n.innerHTML=`<b>Reserved. Pay ₹${r.total} at pickup.</b> ${esc(r.seller.name)}, ${esc(r.seller.address)}, 📞 ${esc(r.seller.phone)}. Pick up by ${esc(r.pickupBy)}.`;setTimeout(market,4000)}catch(x){n.textContent=x.message}};
-$("lGo").onclick=async()=>{const e=$("lErr");try{await api("/api/listings",{item:$("lItem").value,price:+$("lPrice").value,originalPrice:+$("lOrig").value,quantity:+$("lQty").value,pickupBy:$("lBy").value});["lItem","lPrice","lOrig","lQty","lBy"].forEach(i=>$(i).value="");e.classList.add("hidden");market()}catch(x){e.textContent=x.message;e.classList.remove("hidden")}};
+
+async function history(w){
+ [["hB","B"],["hS","S"]].forEach(([i,k])=>$(i).setAttribute("aria-pressed",k===w));
+ try{const d=await api("/api/history"),rows=w==="B"?d.purchases:d.sales,dt=t=>new Date(t).toLocaleString();
+  $("hist").innerHTML=rows.length?rows.map(o=>w==="B"
+   ?`<div class="card"><h3>${esc(o.item)}</h3><div>${o.qty} × ₹${o.price} = <b>₹${o.total}</b> (pay at pickup)</div><div class="hint">From ${esc(o.seller.name)}, ${esc(o.seller.address)} · 📞 ${esc(o.seller.phone)}</div><div class="hint">Pick up by ${esc(o.pickupBy)} · bought ${dt(o.at)}</div></div>`
+   :`<div class="card"><h3>${esc(o.item)}</h3><div>${o.qty} portion${o.qty>1?"s":""} × ₹${o.price} = <b>₹${o.total}</b></div><div class="hint">Bought by ${esc(o.buyer.name)}${o.buyer.businessName?" ("+esc(o.buyer.businessName)+")":""}, ${esc(o.buyer.city)} · 📞 ${esc(o.buyer.phone)}</div><div class="hint">${esc(o.buyer.email)} · ${dt(o.at)}</div></div>`).join(""):`<div class="panel"><p>${w==="B"?"You haven't bought anything yet. Find food in Buy food.":"Nothing has been bought from you yet. Sell food by asking Sproutsy."}</p></div>`}
+ catch(e){$("hist").innerHTML=`<div class="panel err">${esc(e.message)}</div>`}}
+$("hB").onclick=()=>history("B");$("hS").onclick=()=>history("S");
 
 (async()=>{if(token)try{enter(await api("/api/me"))}catch{logout()}else logout()})();
 </script></body></html>

@@ -40,6 +40,7 @@ Reply with ONLY JSON:
 {"status":"needs_info","questions":["..."]}
 {"status":"result","category":"edible surplus | spoiled food | organic scraps | other food waste | paper or plastic","pathway":"sell|donate|compost|biogas|scrap","reason":"1-2 plain sentences addressed to the user","safety_note":"1 sentence","next_steps":["2-4 short steps"]}`;
 
+const canSell=new Map(); // email -> time Sproutsy last offered sell/donate (one listing per offer, valid 2 hours)
 const hits=new Map();const limited=ip=>{const n=Date.now(),a=(hits.get(ip)||[]).filter(t=>n-t<6e5);a.push(n);hits.set(ip,a);return a.length>30};
 
 // Rule-based food check. This runs on every request so spoiled food can never be routed to sell or donate.
@@ -91,6 +92,7 @@ app.post("/api/route",auth,async(req,res)=>{
     if(!a.skip&&a.good&&["compost","biogas"].includes(out.pathway))out=goodResult();
     const edible=["sell","donate"].includes(out.pathway);
     out.options=edible?["sell","donate"]:[out.pathway];
+    if(edible)canSell.set(u.email,Date.now());
     if(edible){const c=u.city.toLowerCase(),n=partners.filter(p=>p.type==="ngo");out.partners=n.filter(p=>p.city.toLowerCase()===c).concat(n.filter(p=>p.city.toLowerCase()!==c)).slice(0,4)}
   }
   res.json(out);
@@ -105,15 +107,20 @@ app.post("/api/pickups",auth,(req,res)=>{
 app.get("/api/listings",auth,(_q,res)=>res.json(db.listings.filter(l=>l.quantity>0).sort((a,b)=>b.at-a.at)));
 app.post("/api/listings",auth,(req,res)=>{
   const u=req.user;
+  if(Date.now()-(canSell.get(u.email)||0)>72e5)return bad(res,"Ask Sproutsy first. You can list food once Sproutsy recommends selling or donating it.",403);
   const{item,price,originalPrice,quantity,pickupBy}=req.body||{};
   if(!item||!(price>=0)||!(originalPrice>0)||!(quantity>0)||!pickupBy)return bad(res,"Fill in item, both prices, portions and pick-up time.");
   if(price>originalPrice)return bad(res,"The sale price should be lower than the original price.");
-  db.listings.push({id:crypto.randomUUID(),item:String(item).slice(0,100),price:+price,originalPrice:+originalPrice,quantity:Math.floor(quantity),pickupBy:String(pickupBy).slice(0,80),seller:{name:u.businessName,address:u.address,phone:u.phone,city:u.city},at:Date.now()});save();res.json({ok:true});
+  canSell.delete(u.email);
+  db.listings.push({id:crypto.randomUUID(),owner:u.email,item:String(item).slice(0,100),price:+price,originalPrice:+originalPrice,quantity:Math.floor(quantity),pickupBy:String(pickupBy).slice(0,80),seller:{name:u.businessName,address:u.address,phone:u.phone,city:u.city},at:Date.now()});save();res.json({ok:true});
 });
 app.post("/api/listings/:id/reserve",auth,(req,res)=>{
   const l=db.listings.find(x=>x.id===req.params.id),q=Math.floor(req.body?.qty||1);
   if(!l||q<1||q>l.quantity)return bad(res,"Not enough portions left.");
-  l.quantity-=q;db.orders.push({listing:l.id,buyer:req.user.email,qty:q,at:Date.now()});save();res.json({ok:true,seller:l.seller,total:q*l.price,pickupBy:l.pickupBy});
+  if(l.owner===req.user.email)return bad(res,"You can't reserve your own listing.");
+  const b=req.user;l.quantity-=q;db.orders.push({listing:l.id,item:l.item,price:l.price,qty:q,total:q*l.price,pickupBy:l.pickupBy,seller:{email:l.owner,...l.seller},buyer:{email:b.email,name:b.name,businessName:b.businessName,phone:b.phone,city:b.city},at:Date.now()});save();res.json({ok:true,seller:l.seller,total:q*l.price,pickupBy:l.pickupBy});
 });
+
+app.get("/api/history",auth,(req,res)=>{const e=req.user.email,o=[...db.orders].reverse();res.json({purchases:o.filter(x=>x.buyer&&x.buyer.email===e),sales:o.filter(x=>x.seller&&x.seller.email===e)})});
 
 app.listen(process.env.PORT||3000,()=>console.log("WasteWise running"));
