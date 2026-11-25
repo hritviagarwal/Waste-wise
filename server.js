@@ -1,6 +1,7 @@
 const express=require("express"),path=require("path"),fs=require("fs"),crypto=require("crypto");
 const app=express();app.use(express.json({limit:"20kb"}));app.use(express.static(path.join(__dirname,"public")));
 const API_KEY=process.env.ANTHROPIC_API_KEY,MODEL=process.env.MODEL||"claude-sonnet-5-5";
+const GEMINI_KEY=process.env.GEMINI_API_KEY,GEMINI_MODEL=process.env.GEMINI_MODEL||"gemini-2.5-flash";
 const FILE=path.join(process.env.DATA_DIR||__dirname,"data.json");
 let db={users:[],sessions:{},listings:[],pickups:[],orders:[]};
 try{db={...db,...JSON.parse(fs.readFileSync(FILE))}}catch{}
@@ -74,18 +75,28 @@ function fallback(b){
   return result("food of unknown age","compost","We could not confirm this food is fresh and well stored, so composting is the safe choice.","Do not eat or serve food you are unsure about.",["Seal it in a leak-proof container","Pick a collection time below"]);
 }
 
+// Uses Claude if ANTHROPIC_API_KEY is set, otherwise Gemini if GEMINI_API_KEY is set
+async function askAI(msg){
+  if(API_KEY){
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:MODEL,max_tokens:700,system:SYSTEM,messages:[{role:"user",content:msg}]})});
+    if(!r.ok)throw new Error("Anthropic API "+r.status);
+    const d=await r.json();return d.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+  }
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":GEMINI_KEY},body:JSON.stringify({systemInstruction:{parts:[{text:SYSTEM}]},contents:[{role:"user",parts:[{text:msg}]}],generationConfig:{responseMimeType:"application/json",maxOutputTokens:2000}})});
+  if(!r.ok)throw new Error("Gemini API "+r.status);
+  const d=await r.json();return(d.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+}
+
 app.post("/api/route",auth,async(req,res)=>{
   if(limited(req.ip))return bad(res,"Too many requests. Try again in a few minutes.",429);
   const{food,prepared,quantity,storage,answers}=req.body||{};const u=req.user;
   if(!food||typeof food!=="string"||food.length>300)return bad(res,"Tell Sproutsy what you have.");
   const a=assess(req.body);let out;
   if(a.why)out=badResult(a);
-  else if(!API_KEY)out=fallback(req.body);
+  else if(!API_KEY&&!GEMINI_KEY)out=fallback(req.body);
   else try{
     const msg=[`User role: ${u.role}${u.businessName?" ("+u.businessName+")":""}`,`City: ${u.city}`,`Item: ${food}`,`Prepared: ${prepared||"not given"}`,`Quantity: ${quantity||"not given"}`,`Storage: ${storage||"not given"}`,answers?`Follow-up answers: ${JSON.stringify(answers).slice(0,1000)}\nGive a result now.`:""].filter(Boolean).join("\n");
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:MODEL,max_tokens:700,system:SYSTEM,messages:[{role:"user",content:msg}]})});
-    if(!r.ok)throw new Error("API "+r.status);
-    const d=await r.json();out=JSON.parse(d.content.filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim());
+    const text=await askAI(msg);out=JSON.parse(text.replace(/```json|```/g,"").trim());
     if(!["needs_info","result"].includes(out.status))throw new Error("shape");
   }catch(e){console.error(e.message);out=fallback(req.body)}
   if(out.status==="result"){
@@ -122,5 +133,27 @@ app.post("/api/listings/:id/reserve",auth,(req,res)=>{
 });
 
 app.get("/api/history",auth,(req,res)=>{const e=req.user.email,o=[...db.orders].reverse();res.json({purchases:o.filter(x=>x.buyer&&x.buyer.email===e),sales:o.filter(x=>x.seller&&x.seller.email===e)})});
+
+app.post("/api/profile",auth,(req,res)=>{
+  const u=req.user,{name,email,role,city,businessName,address,phone}=req.body||{};
+  const f=[name,email,city,businessName,address,phone];
+  if(f.some(x=>!x||String(x).length>200)||!["restaurant","homekitchen","business"].includes(role))return bad(res,"Fill in every field, using under 200 characters each.");
+  const e=String(email).toLowerCase().trim(),old=u.email;
+  if(e!==old&&db.users.find(x=>x.email===e))return bad(res,"That email is already used by another account.",409);
+  Object.assign(u,{name:String(name).trim(),email:e,role,city:String(city).trim(),businessName:String(businessName).trim(),address:String(address).trim(),phone:String(phone).trim()});
+  if(e!==old){
+    db.orders.forEach(o=>{if(o.buyer&&o.buyer.email===old)o.buyer.email=e;if(o.seller&&o.seller.email===old)o.seller.email=e});
+    db.listings.forEach(l=>{if(l.owner===old)l.owner=e});db.pickups.forEach(p=>{if(p.user===old)p.user=e});
+    if(canSell.has(old)){canSell.set(e,canSell.get(old));canSell.delete(old)}
+  }
+  db.listings.forEach(l=>{if(l.owner===e)l.seller={name:u.businessName,address:u.address,phone:u.phone,city:u.city}});
+  save();res.json({user:pub(u)});
+});
+app.post("/api/password",auth,(req,res)=>{
+  const{current,next}=req.body||{},u=req.user;
+  if(hash(String(current),u.salt)!==u.pw)return bad(res,"Your current password is wrong.");
+  if(!next||String(next).length<6)return bad(res,"The new password needs 6 or more characters.");
+  u.salt=crypto.randomBytes(16).toString("hex");u.pw=hash(String(next),u.salt);save();res.json({ok:true});
+});
 
 app.listen(process.env.PORT||3000,()=>console.log("WasteWise running"));

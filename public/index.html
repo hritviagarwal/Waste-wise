@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WasteWise</title>
+<script>document.documentElement.dataset.theme=localStorage.getItem("wwTheme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light")</script>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{
+:root{--field:#fff;--okbg:#e6f1ea;--warnbg:#fff8e6;--head:#1f4d3a;--err:#a3261d;
   --ink:#14231c; --muted:#5a6b62; --paper:#eef3ef; --card:#fff; --line:#cfdad3; --brand:#1f4d3a;
   --sell:#c98e0a; --donate:#2f6fb5; --compost:#4e8f3a; --biogas:#7a4fa3;
 }
@@ -11,20 +12,20 @@
 body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 "IBM Plex Sans",system-ui,sans-serif}
 main{max-width:720px;margin:0 auto;padding:40px 20px 80px}
 h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;line-height:1.1;margin:0}
-h1{font-size:clamp(2.4rem,7vw,3.8rem);font-weight:800;color:var(--brand);letter-spacing:-.02em}
+h1{font-size:clamp(2.4rem,7vw,3.8rem);font-weight:800;color:var(--head);letter-spacing:-.02em}
 .lead{color:var(--muted);max-width:52ch;margin:12px 0 32px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
 label,.q{display:block;font-weight:500;margin:18px 0 8px}
 label:first-child{margin-top:0}
-input[type=text],input[type=date]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:inherit}
+input[type=text],input[type=date],input[type=password]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--field);color:inherit}
 input:focus,button:focus-visible{outline:3px solid #8fc4a8;outline-offset:1px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font:inherit;cursor:pointer;color:inherit}
+.chip{border:1px solid var(--line);background:var(--field);border-radius:99px;padding:7px 14px;font:inherit;cursor:pointer;color:inherit}
 .chip[aria-pressed=true]{background:var(--brand);color:#fff;border-color:var(--brand)}
 .hint{color:var(--muted);font-size:.9rem}
 .go{margin-top:24px;width:100%;background:var(--brand);color:#fff;border:0;border-radius:10px;padding:15px;font:700 1.05rem "Bricolage Grotesque",sans-serif;cursor:pointer}
 .go:disabled{opacity:.6;cursor:wait}
-.err{color:#a3261d;margin-top:12px}
+.err{color:var(--err);margin-top:12px}
 .hidden{display:none}
 
 /* The route: four destinations, the chosen one is lit */
@@ -39,21 +40,23 @@ input:focus,button:focus-visible{outline:3px solid #8fc4a8;outline-offset:1px}
 .stop.main:before{left:-20px;top:22px;background:#fff;border-color:var(--c);box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 30%,transparent)}
 .stop.main strong{font-size:1.5rem;display:block}
 .stop.main p{margin:6px 0 0}
-.note{border-left:4px solid var(--sell);background:#fff8e6;padding:12px 14px;border-radius:0 8px 8px 0;margin-top:24px}
+.note{border-left:4px solid var(--sell);background:var(--warnbg);padding:12px 14px;border-radius:0 8px 8px 0;margin-top:24px}
 .steps{padding-left:20px;margin:8px 0 0}
-.again{margin-top:22px;background:none;border:1px solid var(--brand);color:var(--brand);border-radius:8px;padding:10px 18px;font:inherit;cursor:pointer}
+.again{margin-top:22px;background:none;border:1px solid var(--head);color:var(--head);border-radius:8px;padding:10px 18px;font:inherit;cursor:pointer}
 footer{margin-top:40px;color:var(--muted);font-size:.85rem}
 @media (prefers-reduced-motion:no-preference){.stop.main{animation:land .5s ease-out}@keyframes land{from{transform:translateX(-12px);opacity:0}}}
-</style><style>
+</style>
+<style>html[data-theme=dark]{--ink:#e8f0ea;--muted:#9db0a4;--paper:#0f1a14;--card:#17251d;--line:#2c4034;--brand:#2f7a55;--head:#8fd3ac;--field:#1d2e24;--okbg:#1d3a2a;--warnbg:#3a3014;--err:#ff8a80;color-scheme:dark}</style>
+<style>
 .tabs{display:flex;gap:8px;margin:0 0 20px;align-items:center;flex-wrap:wrap}.tabs .sp{flex:1}
 .tab{background:none;border:1px solid var(--line);border-radius:99px;padding:8px 18px;font:inherit;cursor:pointer;color:inherit}.tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
-.roles{display:grid;gap:8px}.role{text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px 14px;font:inherit;cursor:pointer;color:inherit}.role[aria-pressed=true]{border:2px solid var(--brand);background:#e6f1ea}
-.card{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px;background:#fff}.card h3{font-size:1.15rem}
-.price{font:800 1.4rem "Bricolage Grotesque",sans-serif;color:var(--brand)}.price s{font-weight:500;font-size:1rem;color:var(--muted);margin-left:6px}
-.badge{font-size:.78rem;background:#fff8e6;border:1px solid var(--sell);border-radius:99px;padding:1px 8px;margin-left:6px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
-.small{width:auto;margin-top:12px;padding:10px 20px}.ok{background:#e6f1ea;border-radius:10px;padding:14px;margin-top:16px}
-.sprout{display:flex;gap:10px;align-items:center;margin-bottom:12px}.sprout b{font:800 1.3rem "Bricolage Grotesque",sans-serif;color:var(--brand)}
+.roles{display:grid;gap:8px}.role{text-align:left;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:12px 14px;font:inherit;cursor:pointer;color:inherit}.role[aria-pressed=true]{border:2px solid var(--brand);background:var(--okbg)}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px;background:var(--field)}.card h3{font-size:1.15rem}
+.price{font:800 1.4rem "Bricolage Grotesque",sans-serif;color:var(--head)}.price s{font-weight:500;font-size:1rem;color:var(--muted);margin-left:6px}
+.badge{font-size:.78rem;background:var(--warnbg);border:1px solid var(--sell);border-radius:99px;padding:1px 8px;margin-left:6px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}select{color:inherit;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--field)}
+.small{width:auto;margin-top:12px;padding:10px 20px}.ok{background:var(--okbg);border-radius:10px;padding:14px;margin-top:16px}
+.sprout{display:flex;gap:10px;align-items:center;margin-bottom:12px}.sprout b{font:800 1.3rem "Bricolage Grotesque",sans-serif;color:var(--head)}
 </style>
 </head><body><main>
 <h1>WasteWise</h1>
@@ -82,7 +85,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem}
 </section>
 
 <div id="app" class="hidden">
- <div class="tabs"><button class="tab on" id="nS">Sproutsy</button><button class="tab" id="nM">Buy food</button><button class="tab" id="nH">History</button><span class="sp"></span><span class="hint" id="who"></span><button class="tab" id="out">Log out</button></div>
+ <div class="tabs"><button class="tab on" id="nS">Sproutsy</button><button class="tab" id="nM">Buy food</button><button class="tab" id="nH">History</button><button class="tab" id="nT">Settings</button><span class="sp"></span><span class="hint" id="who"></span><button class="tab" id="out">Log out</button></div>
 
  <section id="vS">
   <section id="form" class="panel">
@@ -108,6 +111,22 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem}
   <div class="chips"><button type="button" class="chip" id="hB" aria-pressed="true">My purchases</button><button type="button" class="chip" id="hS" aria-pressed="false">My sales</button></div>
   <div id="hist"></div>
  </section>
+ <section id="vT" class="hidden">
+  <div class="panel"><h2>Appearance</h2><label>Theme</label><div class="chips"><button type="button" class="chip" id="thL" aria-pressed="false">☀️ Light</button><button type="button" class="chip" id="thD" aria-pressed="false">🌙 Dark</button></div></div>
+  <div class="panel" style="margin-top:16px"><h2>Account</h2>
+   <label for="stRole">I am a...</label><select id="stRole"><option value="restaurant">Restaurant owner</option><option value="homekitchen">Home kitchen</option><option value="business">Other small business owner</option></select>
+   <label for="stName">Your name</label><input type="text" id="stName" maxlength="80">
+   <label for="stMail">Email</label><input type="text" id="stMail" maxlength="120">
+   <label for="stCity">City</label><input type="text" id="stCity" maxlength="60">
+   <label for="stBiz">Kitchen or business name</label><input type="text" id="stBiz" maxlength="100">
+   <label for="stAddr">Address</label><input type="text" id="stAddr" maxlength="200">
+   <label for="stPhone">Phone</label><input type="text" id="stPhone" maxlength="30">
+   <button class="go small" id="stSave">Save changes</button><div class="err hidden" id="stErr" role="alert"></div><div class="ok hidden" id="stOk"></div></div>
+  <div class="panel" style="margin-top:16px"><h2>Password</h2>
+   <label for="stCur">Current password</label><input type="password" id="stCur">
+   <label for="stNew">New password (6+ characters)</label><input type="password" id="stNew">
+   <button class="go small" id="stPw">Change password</button><div class="err hidden" id="pwErr" role="alert"></div><div class="ok hidden" id="pwOk"></div></div>
+ </section>
 </div>
 <footer>WasteWise gives guidance, not a food safety certificate. When in doubt, don't serve it.</footer>
 </main>
@@ -120,8 +139,8 @@ const show=(ids,all)=>all.forEach(s=>$(s).classList.toggle("hidden",!ids.include
 function logout(){localStorage.removeItem("ww");token=null;user=null;show(["auth"],["auth","app"])}
 function enter(d){token=d.token||token;if(d.token)localStorage.setItem("ww",d.token);user=d.user;$("who").textContent=user.name+" · "+L[user.role];
  show(["app"],["auth","app"]);tab("S")}
-function tab(t){show(["v"+t],["vS","vM","vH"]);["S","M","H"].forEach(x=>$("n"+x).classList.toggle("on",t===x));if(t==="M")market();if(t==="H")history("B")}
-$("nS").onclick=()=>tab("S");$("nM").onclick=()=>tab("M");$("nH").onclick=()=>tab("H");$("out").onclick=logout;
+function tab(t){show(["v"+t],["vS","vM","vH","vT"]);["S","M","H","T"].forEach(x=>$("n"+x).classList.toggle("on",t===x));if(t==="M")market();if(t==="H")history("B");if(t==="T")fillSettings()}
+$("nS").onclick=()=>tab("S");$("nM").onclick=()=>tab("M");$("nH").onclick=()=>tab("H");$("nT").onclick=()=>tab("T");$("out").onclick=logout;
 
 // auth
 function setMode(m){mode=m;$("tLogin").classList.toggle("on",m==="login");$("tSign").classList.toggle("on",m==="sign");$("signOnly").classList.toggle("hidden",m==="login");$("authGo").textContent=m==="login"?"Log in":"Create account"}
@@ -178,6 +197,18 @@ async function history(w){
    :`<div class="card"><h3>${esc(o.item)}</h3><div>${o.qty} portion${o.qty>1?"s":""} × ₹${o.price} = <b>₹${o.total}</b></div><div class="hint">Bought by ${esc(o.buyer.name)}${o.buyer.businessName?" ("+esc(o.buyer.businessName)+")":""}, ${esc(o.buyer.city)} · 📞 ${esc(o.buyer.phone)}</div><div class="hint">${esc(o.buyer.email)} · ${dt(o.at)}</div></div>`).join(""):`<div class="panel"><p>${w==="B"?"You haven't bought anything yet. Find food in Buy food.":"Nothing has been bought from you yet. Sell food by asking Sproutsy."}</p></div>`}
  catch(e){$("hist").innerHTML=`<div class="panel err">${esc(e.message)}</div>`}}
 $("hB").onclick=()=>history("B");$("hS").onclick=()=>history("S");
+
+function setTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem("wwTheme",t);$("thL").setAttribute("aria-pressed",t==="light");$("thD").setAttribute("aria-pressed",t==="dark")}
+$("thL").onclick=()=>setTheme("light");$("thD").onclick=()=>setTheme("dark");
+function fillSettings(){const m={stRole:"role",stName:"name",stMail:"email",stCity:"city",stBiz:"businessName",stAddr:"address",stPhone:"phone"};
+ for(const k in m)$(k).value=user[m[k]]||"";["stErr","stOk","pwErr","pwOk"].forEach(i=>$(i).classList.add("hidden"));
+ const t=document.documentElement.dataset.theme;$("thL").setAttribute("aria-pressed",t==="light");$("thD").setAttribute("aria-pressed",t==="dark")}
+const note=(id,msg)=>{const e=$(id);e.textContent=msg;e.classList.remove("hidden")};
+$("stSave").onclick=async()=>{["stErr","stOk"].forEach(i=>$(i).classList.add("hidden"));
+ try{const d=await api("/api/profile",{role:$("stRole").value,name:$("stName").value,email:$("stMail").value,city:$("stCity").value,businessName:$("stBiz").value,address:$("stAddr").value,phone:$("stPhone").value});
+  user=d.user;$("who").textContent=user.name+" · "+L[user.role];note("stOk","Saved.")}catch(e){note("stErr",e.message)}};
+$("stPw").onclick=async()=>{["pwErr","pwOk"].forEach(i=>$(i).classList.add("hidden"));
+ try{await api("/api/password",{current:$("stCur").value,next:$("stNew").value});$("stCur").value=$("stNew").value="";note("pwOk","Password changed.")}catch(e){note("pwErr",e.message)}};
 
 (async()=>{if(token)try{enter(await api("/api/me"))}catch{logout()}else logout()})();
 </script></body></html>
